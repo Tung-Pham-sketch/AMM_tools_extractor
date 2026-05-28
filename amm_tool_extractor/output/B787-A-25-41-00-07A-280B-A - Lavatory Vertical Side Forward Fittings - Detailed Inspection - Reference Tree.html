@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>AMM Reference Tree</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Courier New', Courier, monospace;
+    background: #d8dde3;
+    min-height: 100vh;
+    padding: 20px;
+    color: #1a1a2e;
+  }
+
+  header {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 2px solid #aaa;
+  }
+
+  header h1 {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: #444;
+    flex: 1;
+  }
+
+  .zoom-ctrl {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 10px;
+    color: #555;
+    letter-spacing: 0.05em;
+  }
+
+  .zoom-ctrl input[type=range] {
+    width: 100px;
+    accent-color: #1a5fa8;
+  }
+
+  .zoom-label {
+    min-width: 34px;
+    font-size: 10px;
+    color: #333;
+    font-weight: 700;
+  }
+
+  .tree-section {
+    margin-bottom: 28px;
+    background: #e8ecf0;
+    border: 1px solid #c0c6cd;
+    border-radius: 3px;
+    padding: 14px 14px 18px;
+  }
+
+  .section-title {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #1a5fa8;
+    margin-bottom: 14px;
+  }
+
+  .tree-viewport {
+    overflow: auto;
+    width: 100%;
+    cursor: grab;
+    /* height is set by JS after measuring the canvas */
+  }
+  .tree-viewport:active { cursor: grabbing; }
+
+  /* Outer sizer shrinks with the scale so the viewport has correct scrollable area */
+  .tree-sizer {
+    display: inline-block;
+    transform-origin: top left;
+  }
+
+  .tree-canvas {
+    display: inline-flex;
+    padding: 16px 40px 24px 16px;
+  }
+
+  .node {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    width: 168px;
+    min-height: 40px;
+    padding: 5px 8px;
+    border: 2px solid #1a5fa8;
+    background: #fff;
+    text-align: center;
+    flex-shrink: 0;
+    margin: 6px 0;
+  }
+
+  .node .dmc {
+    font-size: 7.5px;
+    letter-spacing: 0.04em;
+    color: #999;
+    margin-bottom: 2px;
+    word-break: break-all;
+    line-height: 1.2;
+  }
+
+  .node .lbl {
+    font-size: 9px;
+    font-weight: 700;
+    line-height: 1.3;
+    color: #1a1a2e;
+  }
+
+  .d0 { border-color: #1a5fa8; }
+  .d1 { border-color: #e07b2a; }
+  .d2 { border-color: #27a86e; }
+  .d3 { border-color: #9b3db8; }
+  .d4 { border-color: #b5860d; }
+  .d5 { border-color: #1a5fa8; }
+  .d6 { border-color: #e07b2a; }
+  .d7 { border-color: #27a86e; }
+  .d8 { border-color: #9b3db8; }
+  .d9 { border-color: #b5860d; }
+
+  .node.nf { border-color: #c0392b; background: #fff5f5; }
+  .node.nf .lbl { color: #c0392b; font-size: 8px; }
+  .node.as { border-style: dashed; opacity: 0.6; }
+  .node.as .lbl { font-style: italic; }
+
+  .h-line { width: 22px; height: 2px; background: #555; flex-shrink: 0; }
+  .stub   { width: 22px; height: 2px; background: #555; flex-shrink: 0; }
+
+  .bracket {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    position: relative;
+    flex-shrink: 0;
+  }
+
+  .child-row {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>AMM Reference Tree &nbsp;<span style="font-weight:400;color:#888;">(max depth: 3)</span></h1>
+  <div class="zoom-ctrl">
+    ZOOM
+    <input type="range" id="zoomSlider" min="20" max="150" value="65">
+    <span class="zoom-label" id="zoomLabel">65%</span>
+  </div>
+</header>
+
+<div id="app"></div>
+
+<script>
+const TREES = [{"dmc": "B787-A-25-41-00-07A-280B-A", "title": "Lavatory Vertical Side Forward Fittings – Detailed Inspection", "already_shown": false, "depth": 0, "children": [{"dmc": "B787-A-25-41-00-01A-520A-A", "title": "Lavatory - Outboard – Removal", "already_shown": false, "depth": 1, "children": [{"dmc": "B787-A-12-14-01-00A-228A-A", "title": "Potable Water System – Drain Liquid", "already_shown": false, "depth": 2, "children": [{"dmc": "B787-A-24-22-00-00Q-730B-A", "title": "Electrical Power (Task Selection) – Activation", "already_shown": false, "depth": 3, "children": []}, {"dmc": "B787-A-50-11-06-03A-520A-A", "title": "Forward and Aft Cargo Compartment Vertical Sidewall Lining – Removal", "already_shown": false, "depth": 3, "children": []}, {"dmc": "B787-A-50-11-06-03A-720A-A", "title": "Forward and Aft Cargo Compartment Vertical Sidewall Lining – Installation", "already_shown": false, "depth": 3, "children": []}, {"dmc": "B787-A-52-34-00-00A-540A-A", "title": "Forward Cargo Door Using the External Cargo Door Control Switch – Open for Access", "already_shown": false, "depth": 3, "children": []}, {"dmc": "B787-A-52-34-00-00A-740A-A", "title": "Forward Cargo Door Using the External Cargo Door Control Switch – Close after Access", "already_shown": false, "depth": 3, "children": []}]}, {"dmc": "B787-A-20-10-20-00A-520A-A", "title": "Coupling – Removal", "already_shown": false, "depth": 2, "children": []}, {"dmc": "B787-A-25-21-06-00A-520A-A", "title": "Main Ceiling Panel – Removal", "already_shown": false, "depth": 2, "children": [{"dmc": "B787-A-33-21-05-00A-520A-A", "title": "Dome Ring Lights – Removal", "already_shown": false, "depth": 3, "children": []}]}, {"dmc": "B787-A-25-24-10-04B-520A-A", "title": "Closet (Task Selection) – Removal", "already_shown": false, "depth": 2, "children": [{"dmc": "B787-A-25-24-10-00A-520A-A", "title": "Closet - Centerline – Removal", "already_shown": false, "depth": 3, "children": []}, {"dmc": "B787-A-25-24-10-01A-520A-A", "title": "Closet - Centerline Underbin – Removal", "already_shown": false, "depth": 3, "children": []}, {"dmc": "B787-A-25-24-10-02A-520A-A", "title": "Closet - Outboard – Removal", "already_shown": false, "depth": 3, "children": []}]}, {"dmc": "B787-A-25-25-01-00A-520A-A", "title": "Passenger Seat – Removal", "already_shown": false, "depth": 2, "children": [{"dmc": "B787-A-25-25-01-39A-510B-A", "title": "Passenger Seat Power – Deactivation", "already_shown": false, "depth": 3, "children": []}, {"dmc": "B787-A-25-25-01-78A-510B-A", "title": "Passenger Seat Inflatable Occupant Restraint – Deactivation", "already_shown": false, "depth": 3, "children": []}, {"dmc": "B787-A-25-25-02-00A-520A-A", "title": "Passenger Seat Track Cover – Removal", "already_shown": false, "depth": 3, "children": []}]}, {"dmc": "B787-A-25-25-06-00A-520A-A", "title": "Cabin Attendant Seat – Removal", "already_shown": false, "depth": 2, "children": [{"dmc": "B787-A-33-51-00-04A-510B-A", "title": "Emergency Lighting System Power – Deactivation", "already_shown": false, "depth": 3, "children": []}]}, {"dmc": "B787-A-25-28-05-00A-520A-A", "title": "Floor Mounted Stowage Box – Removal", "already_shown": false, "depth": 2, "children": [{"dmc": "B787-A-25-25-01-00A-520A-A", "title": "Passenger Seat – Removal", "already_shown": true, "depth": 3, "children": []}, {"dmc": "B787-A-25-27-01-00B-520A-A", "title": "Carpet (Adhesive Back) – Removal", "already_shown": false, "depth": 3, "children": []}, {"dmc": "B787-A-35-31-03-00F-520A-A", "title": "Portable Oxygen Cylinder (Electronic Pulse Delivery) – Removal", "already_shown": false, "depth": 3, "children": []}]}, {"dmc": "B787-A-25-31-01-00A-520A-A", "title": "Center Flexible Galley – Removal", "already_shown": false, "depth": 2, "children": [{"dmc": "B787-A-12-14-01-00A-228A-A", "title": "Potable Water System – Drain Liquid", "already_shown": true, "depth": 3, "children": []}, {"dmc": "B787-A-20-10-20-00A-520A-A", "title": "Coupling – Removal", "already_shown": true, "depth": 3, "children": []}, {"dmc": "B787-A-21-53-19-00A-520A-A", "title": "Galley Cooling Unit Heat Exchanger Assembly – Removal", "already_shown": false, "depth": 3, "children": []}, {"dmc": "B787-A-21-53-20-00A-520A-A", "title": "Galley Cooling Unit Fan Module – Removal", "already_shown": false, "depth": 3, "children": []}, {"dmc": "B787-A-25-21-06-00A-520A-A", "title": "Main Ceiling Panel – Removal", "already_shown": true, "depth": 3, "children": []}, {"dmc": "B787-A-25-21-07-00A-520A-A", "title": "Entryway Ceiling Panel - Door 4 – Removal", "already_shown": false, "depth": 3, "children": []}, {"dmc": "B787-A-25-21-07-01A-520A-A", "title": "Entryway Ceiling Panel - Door 1 – Removal", "already_shown": false, "depth": 3, "children": []}, {"dmc": "B787-A-25-24-10-00A-520A-A", "title": "Closet - Centerline – Removal", "already_shown": true, "depth": 3, "children": []}, {"dmc": "B787-A-25-24-10-01A-520A-A", "title": "Closet - Centerline Underbin – Removal", "already_shown": true, "depth": 3, "children": []}, {"dmc": "B787-A-25-24-10-02A-520A-A", "title": "Closet - Outboard – Removal", "already_shown": true, "depth": 3, "children": []}, {"dmc": "B787-A-25-24-23-00A-520A-A", "title": "Curtains (Task Selection) – Removal", "already_shown": false, "depth": 3, "children": []}, {"dmc": "B787-A-25-25-01-00A-520A-A", "title": "Passenger Seat – Removal", "already_shown": true, "depth": 3, "children": []}, {"dmc": "B787-A-25-25-06-00A-520A-A", "title": "Cabin Attendant Seat – Removal", "already_shown": true, "depth": 3, "children": []}, {"dmc": "B787-A-25-28-05-00A-520A-A", "title": "Floor Mounted Stowage Box – Removal", "already_shown": true, "depth": 3, "children": []}, {"dmc": "B787-A-25-28-06-00A-520A-A", "title": "Attendant Module – Removal", "already_shown": false, "depth": 3, "children": []}, {"dmc": "B787-A-25-31-00-04A-520A-A", "title": "Galley Closeout Seals – Removal", "already_shown": false, "depth": 3, "children": []}, {"dmc": "B787-A-25-32-00-10A-520A-A", "title": "Galley Insert – Removal", "already_shown": false, "depth": 3, "children": []}, {"dmc": "B787-A-25-41-00-01A-520A-A", "title": "Lavatory - Outboard – Removal", "already_shown": true, "depth": 3, "children": []}, {"dmc": "B787-A-25-41-00-03A-520A-A", "title": "Lavatory - Split – Removal", "already_shown": false, "depth": 3, "children": []}, {"dmc": "B787-A-38-10-01-00A-720A-A", "title": "Potable Water System Cap – Installation", "already_shown": false, "depth": 3, "children": []}, {"dmc": "B787-A-38-30-00-18A-720A-A", "title": "Waste System Cap – Installation", "already_shown": false, "depth": 3, "children": []}, {"dmc": "B787-A-44-26-11-03A-520A-A", "title": "Smart Video Display Unit - Overhead – Removal", "already_shown": false, "depth": 3, "children": []}]}, {"dmc": "B787-A-25-31-03-00A-520A-A", "title": "Outboard Flexible Galley – Removal", "already_shown": false, "depth": 2, "children": [{"dmc": "B787-A-12-14-01-00A-228A-A", "title": "Potable Water System – Drain Liquid", "already_shown": true, "depth": 3, "children": []}, {"dmc": "B787-A-20-10-20-00A-520A-A", "title": "Coupling – Removal", "already_shown": true, "depth": 3, "children": []}, {"dmc": "B787-A-25-21-06-00A-520A-A", "title": "Main Ceiling Panel – Removal", "already_shown": true, "depth": 3, "children": []}, {"dmc": "B787-A-25-21-07-01A-520A-A", "title": "Entryway Ceiling Panel - Door 1 – Removal", "already_shown": true, "depth": 3, "children": []}, {"dmc": "B787-A-25-24-10-00A-520A-A", "title": "Closet - Centerline – Removal", "already_shown": true, "depth": 3, "children": []}, {"dmc": "B787-A-25-24-10-01A-520A-A", "title": "Closet - Centerline Underbin – Removal", "already_shown": true, "depth": 3, "children": []}, {"dmc": "B787-A-25-24-10-02A-520A-A", "title": "Closet - Outboard – Removal", "already_shown": true, "depth": 3, "children": []}, {"dmc": "B787-A-25-24-23-00A-520A-A", "title": "Curtains (Task Selection) – Removal", "already_shown": true, "depth": 3, "children": []}, {"dmc": "B787-A-25-25-01-00A-520A-A", "title": "Passenger Seat – Removal", "already_shown": true, "depth": 3, "children": []}, {"dmc": "B787-A-25-25-06-00A-520A-A", "title": "Cabin Attendant Seat – Removal", "already_shown": true, "depth": 3, "children": []}, {"dmc": "B787-A-25-28-05-00A-520A-A", "title": "Floor Mounted Stowage Box – Removal", "already_shown": true, "depth": 3, "children": []}, {"dmc": "B787-A-25-28-06-00A-520A-A", "title": "Attendant Module – Removal", "already_shown": true, "depth": 3, "children": []}, {"dmc": "B787-A-25-31-00-04A-520A-A", "title": "Galley Closeout Seals – Removal", "already_shown": true, "depth": 3, "children": []}, {"dmc": "B787-A-25-32-00-10A-520A-A", "title": "Galley Insert – Removal", "already_shown": true, "depth": 3, "children": []}, {"dmc": "B787-A-25-41-00-01A-520A-A", "title": "Lavatory - Outboard – Removal", "already_shown": true, "depth": 3, "children": []}, {"dmc": "B787-A-25-41-00-03A-520A-A", "title": "Lavatory - Split – Removal", "already_shown": true, "depth": 3, "children": []}, {"dmc": "B787-A-38-10-01-00A-720A-A", "title": "Potable Water System Cap – Installation", "already_shown": true, "depth": 3, "children": []}, {"dmc": "B787-A-38-30-00-18A-720A-A", "title": "Waste System Cap – Installation", "already_shown": true, "depth": 3, "children": []}]}]}, {"dmc": "B787-A-25-41-00-01A-720A-A", "title": "Lavatory - Outboard – Installation", "already_shown": false, "depth": 1, "children": [{"dmc": "B787-A-20-10-20-00A-720A-A", "title": "Coupling – Installation", "already_shown": false, "depth": 2, "children": [{"dmc": "B787-A-28-00-00-43A-950A-A", "title": "Airworthiness Limitation Precautions – Standard Practices", "already_shown": false, "depth": 3, "children": []}]}, {"dmc": "B787-A-24-22-00-00Q-730B-A", "title": "Electrical Power (Task Selection) – Activation", "already_shown": true, "depth": 2, "children": []}, {"dmc": "B787-A-25-21-06-00A-720A-A", "title": "Main Ceiling Panel – Installation", "already_shown": false, "depth": 2, "children": [{"dmc": "B787-A-33-21-05-00A-720A-A", "title": "Dome Ring Lights – Installation", "already_shown": false, "depth": 3, "children": []}, {"dmc": "B787-A-44-12-50-00B-340A-A", "title": "Cabin Speaker – Functional Test", "already_shown": false, "depth": 3, "children": []}]}, {"dmc": "B787-A-25-24-10-04B-720A-A", "title": "Closet (Task Selection) – Installation", "already_shown": false, "depth": 2, "children": [{"dmc": "B787-A-25-24-10-00A-720A-A", "title": "Closet - Centerline – Installation", "already_shown": false, "depth": 3, "children": []}, {"dmc": "B787-A-25-24-10-01A-720A-A", "title": "Closet - Centerline Underbin – Installation", "already_shown": false, "depth": 3, "children": []}, {"dmc": "B787-A-25-24-10-02A-720A-A", "title": "Closet - Outboard – Installation", "already_shown": false, "depth": 3, "children": []}]}, {"dmc": "B787-A-25-25-01-00A-720A-A", "title": "Passenger Seat – Installation", "already_shown": false, "depth": 2, "children": [{"dmc": "B787-A-25-25-01-39A-730B-A", "title": "Passenger Seat Power – Activation", "already_shown": false, "depth": 3, "children": []}, {"dmc": "B787-A-25-25-01-78A-730B-A", "title": "Passenger Seat Inflatable Occupant Restraint – Activation", "already_shown": false, "depth": 3, "children": []}, {"dmc": "B787-A-25-25-02-00A-720A-A", "title": "Passenger Seat Track Cover – Installation", "already_shown": false, "depth": 3, "children": []}, {"dmc": "B787-A-25-25-02-00B-300C-A", "title": "Passenger Seat Track Cover (with Data Cable) – Visual Check", "already_shown": false, "depth": 3, "children": []}, {"dmc": "B787-A-33-51-00-00C-320A-A", "title": "Emergency Lights (from the Flight Deck) – Operational Test", "already_shown": false, "depth": 3, "children": []}, {"dmc": "B787-A-44-26-00-76A-343A-A", "title": "In-Flight Entertainment System AVANT – BITE Test", "already_shown": false, "depth": 3, "children": []}]}, {"dmc": "B787-A-25-25-06-00A-720A-A", "title": "Cabin Attendant Seat – Installation", "already_shown": false, "depth": 2, "children": [{"dmc": "B787-A-25-00-00-15A-258A-A", "title": "Equipment and Furnishings – Cleaning", "already_shown": false, "depth": 3, "children": []}, {"dmc": "B787-A-25-63-02-01B-320A-A", "title": "Emergency Evacuation System Passenger Compartment – Operational Test", "already_shown": false, "depth": 3, "children": []}, {"dmc": "B787-A-33-51-00-00B-320A-A", "title": "Emergency Lights (from the Attendant Switch Panel) – Operational Test", "already_shown": false, "depth": 3, "children": []}, {"dmc": "B787-A-33-51-00-04A-730B-A", "title": "Emergency Lighting System Power – Activation", "already_shown": false, "depth": 3, "children": []}]}, {"dmc": "B787-A-25-28-05-00A-720A-A", "title": "Floor Mounted Stowage Box – Installation", "already_shown": false, "depth": 2, "children": [{"dmc": "B787-A-20-10-21-00A-251A-A", "title": "Composite Surface – Chemical Cleaning", "already_shown": false, "depth": 3, "children": []}, {"dmc": "B787-A-20-10-22-00F-251A-A", "title": "Metal Surfaces (Bare, Clad, or Plated Metal) – Chemical Cleaning", "already_shown": false, "depth": 3, "children": []}, {"dmc": "B787-A-25-25-01-00A-720A-A", "title": "Passenger Seat – Installation", "already_shown": true, "depth": 3, "children": []}, {"dmc": "B787-A-25-27-01-00B-720A-A", "title": "Carpet (Adhesive Back) – Installation", "already_shown": false, "depth": 3, "children": []}, {"dmc": "B787-A-35-31-03-00F-720A-A", "title": "Portable Oxygen Cylinder (Electronic Pulse Delivery) – Installation", "already_shown": false, "depth": 3, "children": []}]}, {"dmc": "B787-A-25-31-01-00A-720A-A", "title": "Center Flexible Galley – Installation", "already_shown": false, "depth": 2, "children": [{"dmc": "B787-A-12-14-01-00A-218A-A", "title": "Potable Water System – Fill with Liquid", "already_shown": false, "depth": 3, "children": []}, {"dmc": "B787-A-20-10-20-00A-720A-A", "title": "Coupling – Installation", "already_shown": true, "depth": 3, "children": []}, {"dmc": "B787-A-20-10-21-00A-251A-A", "title": "Composite Surface – Chemical Cleaning", "already_shown": true, "depth": 3, "children": []}, {"dmc": "B787-A-20-10-22-00B-254A-A", "title": "Metal Surfaces (by Hand) – Mechanical Cleaning", "already_shown": false, "depth": 3, "children": []}, {"dmc": "B787-A-20-10-22-00C-254A-A", "title": "Metal Surfaces (with a Rotary Abrasive Disk) – Mechanical Cleaning", "already_shown": false, "depth": 3, "children": []}, {"dmc": "B787-A-20-10-22-00D-254A-A", "title": "Metal Surfaces (with a Rotary Bonding Brush) – Mechanical Cleaning", "already_shown": false, "depth": 3, "children": []}, {"dmc": "B787-A-20-10-22-00F-251A-A", "title": "Metal Surfaces (Bare, Clad, or Plated Metal) – Chemical Cleaning", "already_shown": true, "depth": 3, "children": []}, {"dmc": "B787-A-21-53-19-00A-720A-A", "title": "Galley Cooling Unit Heat Exchanger Assembly – Installation", "already_shown": false, "depth": 3, "children": []}, {"dmc": "B787-A-21-53-20-00A-720A-A", "title": "Galley Cooling Unit Fan Module – Installation", "already_shown": false, "depth": 3, "children": []}, {"dmc": "B787-A-24-22-00-00Q-730B-A", "title": "Electrical Power (Task Selection) – Activation", "already_shown": true, "depth": 3, "children": []}, {"dmc": "B787-A-25-21-06-00A-720A-A", "title": "Main Ceiling Panel – Installation", "already_shown": true, "depth": 3, "children": []}, {"dmc": "B787-A-25-21-07-00A-720A-A", "title": "Entryway Ceiling Panel - Door 4 – Installation", "already_shown": false, "depth": 3, "children": []}, {"dmc": "B787-A-25-21-07-01A-720A-A", "title": "Entryway Ceiling Panel - Door 1 – Installation", "already_shown": false, "depth": 3, "children": []}, {"dmc": "B787-A-25-24-10-00A-720A-A", "title": "Closet - Centerline – Installation", "already_shown": true, "depth": 3, "children": []}, {"dmc": "B787-A-25-24-10-01A-720A-A", "title": "Closet - Centerline Underbin – Installation", "already_shown": true, "depth": 3, "children": []}, {"dmc": "B787-A-25-24-10-02A-720A-A", "title": "Closet - Outboard – Installation", "already_shown": true, "depth": 3, "children": []}, {"dmc": "B787-A-25-24-23-00A-720A-A", "title": "Curtains (Task Selection) – Installation", "already_shown": false, "depth": 3, "children": []}, {"dmc": "B787-A-25-25-01-00A-720A-A", "title": "Passenger Seat – Installation", "already_shown": true, "depth": 3, "children": []}, {"dmc": "B787-A-25-25-06-00A-720A-A", "title": "Cabin Attendant Seat – Installation", "already_shown": true, "depth": 3, "children": []}, {"dmc": "B787-A-25-28-05-00A-720A-A", "title": "Floor Mounted Stowage Box – Installation", "already_shown": true, "depth": 3, "children": []}, {"dmc": "B787-A-25-28-06-00A-720A-A", "title": "Attendant Module – Installation", "already_shown": false, "depth": 3, "children": []}, {"dmc": "B787-A-25-31-00-00A-320A-A", "title": "Galley Light – Operational Test", "already_shown": false, "depth": 3, "children": []}, {"dmc": "B787-A-25-31-00-01A-364A-A", "title": "Galley Potable Water – Leak Test", "already_shown": false, "depth": 3, "children": []}, {"dmc": "B787-A-25-31-00-02A-311A-A", "title": "Galley – General Visual Inspection", "already_shown": false, "depth": 3, "children": []}, {"dmc": "B787-A-25-31-00-03A-280A-A", "title": "Galley Waste Enclosure – Inspection", "already_shown": false, "depth": 3, "children": []}, {"dmc": "B787-A-25-31-00-04A-720A-A", "title": "Galley Closeout Seals – Installation", "already_shown": false, "depth": 3, "children": []}, {"dmc": "B787-A-25-32-00-10A-720A-A", "title": "Galley Insert – Installation", "already_shown": false, "depth": 3, "children": []}, {"dmc": "B787-A-25-41-00-01A-720A-A", "title": "Lavatory - Outboard – Installation", "already_shown": true, "depth": 3, "children": []}, {"dmc": "B787-A-25-41-00-03A-720A-A", "title": "Lavatory - Split – Installation", "already_shown": false, "depth": 3, "children": []}, {"dmc": "B787-A-38-10-00-24B-263A-A", "title": "Potable Water System – Disinfecting, Sanitizing", "already_shown": false, "depth": 3, "children": []}, {"dmc": "B787-A-38-10-01-00A-520A-A", "title": "Potable Water System Cap – Removal", "already_shown": false, "depth": 3, "children": []}, {"dmc": "B787-A-38-30-00-18A-520A-A", "title": "Waste System Cap – Removal", "already_shown": false, "depth": 3, "children": []}, {"dmc": "B787-A-44-26-11-03A-720A-A", "title": "Smart Video Display Unit - Overhead – Installation", "already_shown": false, "depth": 3, "children": []}]}, {"dmc": "B787-A-25-31-03-00A-720A-A", "title": "Outboard Flexible Galley – Installation", "already_shown": false, "depth": 2, "children": [{"dmc": "B787-A-12-14-01-00A-218A-A", "title": "Potable Water System – Fill with Liquid", "already_shown": true, "depth": 3, "children": []}, {"dmc": "B787-A-20-10-20-00A-720A-A", "title": "Coupling – Installation", "already_shown": true, "depth": 3, "children": []}, {"dmc": "B787-A-20-10-21-00A-251A-A", "title": "Composite Surface – Chemical Cleaning", "already_shown": true, "depth": 3, "children": []}, {"dmc": "B787-A-20-10-22-00B-254A-A", "title": "Metal Surfaces (by Hand) – Mechanical Cleaning", "already_shown": true, "depth": 3, "children": []}, {"dmc": "B787-A-20-10-22-00C-254A-A", "title": "Metal Surfaces (with a Rotary Abrasive Disk) – Mechanical Cleaning", "already_shown": true, "depth": 3, "children": []}, {"dmc": "B787-A-20-10-22-00D-254A-A", "title": "Metal Surfaces (with a Rotary Bonding Brush) – Mechanical Cleaning", "already_shown": true, "depth": 3, "children": []}, {"dmc": "B787-A-20-10-22-00F-251A-A", "title": "Metal Surfaces (Bare, Clad, or Plated Metal) – Chemical Cleaning", "already_shown": true, "depth": 3, "children": []}, {"dmc": "B787-A-24-22-00-00Q-730B-A", "title": "Electrical Power (Task Selection) – Activation", "already_shown": true, "depth": 3, "children": []}, {"dmc": "B787-A-25-21-07-01A-720A-A", "title": "Entryway Ceiling Panel - Door 1 – Installation", "already_shown": true, "depth": 3, "children": []}, {"dmc": "B787-A-25-24-10-00A-720A-A", "title": "Closet - Centerline – Installation", "already_shown": true, "depth": 3, "children": []}, {"dmc": "B787-A-25-24-10-01A-720A-A", "title": "Closet - Centerline Underbin – Installation", "already_shown": true, "depth": 3, "children": []}, {"dmc": "B787-A-25-24-10-02A-720A-A", "title": "Closet - Outboard – Installation", "already_shown": true, "depth": 3, "children": []}, {"dmc": "B787-A-25-24-23-00A-720A-A", "title": "Curtains (Task Selection) – Installation", "already_shown": true, "depth": 3, "children": []}, {"dmc": "B787-A-25-25-01-00A-720A-A", "title": "Passenger Seat – Installation", "already_shown": true, "depth": 3, "children": []}, {"dmc": "B787-A-25-25-06-00A-720A-A", "title": "Cabin Attendant Seat – Installation", "already_shown": true, "depth": 3, "children": []}, {"dmc": "B787-A-25-28-05-00A-720A-A", "title": "Floor Mounted Stowage Box – Installation", "already_shown": true, "depth": 3, "children": []}, {"dmc": "B787-A-25-28-06-00A-720A-A", "title": "Attendant Module – Installation", "already_shown": true, "depth": 3, "children": []}, {"dmc": "B787-A-25-31-00-00A-320A-A", "title": "Galley Light – Operational Test", "already_shown": true, "depth": 3, "children": []}, {"dmc": "B787-A-25-31-00-01A-364A-A", "title": "Galley Potable Water – Leak Test", "already_shown": true, "depth": 3, "children": []}, {"dmc": "B787-A-25-31-00-02A-311A-A", "title": "Galley – General Visual Inspection", "already_shown": true, "depth": 3, "children": []}, {"dmc": "B787-A-25-31-00-03A-280A-A", "title": "Galley Waste Enclosure – Inspection", "already_shown": true, "depth": 3, "children": []}, {"dmc": "B787-A-25-31-00-04A-720A-A", "title": "Galley Closeout Seals – Installation", "already_shown": true, "depth": 3, "children": []}, {"dmc": "B787-A-25-32-00-10A-720A-A", "title": "Galley Insert – Installation", "already_shown": true, "depth": 3, "children": []}, {"dmc": "B787-A-25-41-00-01A-720A-A", "title": "Lavatory - Outboard – Installation", "already_shown": true, "depth": 3, "children": []}, {"dmc": "B787-A-25-41-00-03A-720A-A", "title": "Lavatory - Split – Installation", "already_shown": true, "depth": 3, "children": []}, {"dmc": "B787-A-38-10-00-24B-263A-A", "title": "Potable Water System – Disinfecting, Sanitizing", "already_shown": true, "depth": 3, "children": []}, {"dmc": "B787-A-38-10-01-00A-520A-A", "title": "Potable Water System Cap – Removal", "already_shown": true, "depth": 3, "children": []}, {"dmc": "B787-A-38-30-00-18A-520A-A", "title": "Waste System Cap – Removal", "already_shown": true, "depth": 3, "children": []}, {"dmc": "B787-A-44-26-08-00A-720A-A", "title": "Interactive Cabin Management Terminal – Installation", "already_shown": false, "depth": 3, "children": []}]}, {"dmc": "B787-A-25-41-00-02A-320A-A", "title": "Lavatory – Operational Test", "already_shown": false, "depth": 2, "children": [{"dmc": "B787-A-12-14-01-00A-218A-A", "title": "Potable Water System – Fill with Liquid", "already_shown": true, "depth": 3, "children": []}, {"dmc": "B787-A-12-14-01-00A-228A-A", "title": "Potable Water System – Drain Liquid", "already_shown": true, "depth": 3, "children": []}, {"dmc": "B787-A-21-00-00-01C-510B-A", "title": "Remove Conditioned Air from the Airplane (with a Ground Air Source) – Deactivation", "already_shown": false, "depth": 3, "children": []}, {"dmc": "B787-A-21-00-00-02C-730B-A", "title": "Supply Conditioned Air to the Airplane (with a Ground Air Source) – Activation", "already_shown": false, "depth": 3, "children": []}, {"dmc": "B787-A-24-22-00-00Q-510B-A", "title": "Electrical Power (Task Selection) – Deactivation", "already_shown": false, "depth": 3, "children": []}, {"dmc": "B787-A-24-22-00-00Q-730B-A", "title": "Electrical Power (Task Selection) – Activation", "already_shown": true, "depth": 3, "children": []}, {"dmc": "B787-A-25-41-00-04A-271A-A", "title": "Lavatory Door – Adjusting", "already_shown": false, "depth": 3, "children": []}, {"dmc": "B787-A-25-41-08-02A-320A-A", "title": "Lavatory Waste Compartment Door and Flap – Operational Test", "already_shown": false, "depth": 3, "children": []}, {"dmc": "B787-A-33-25-01-01A-320A-A", "title": "Lavatory Call Light – Operational Test", "already_shown": false, "depth": 3, "children": []}, {"dmc": "B787-A-35-21-00-01B-320A-A", "title": "Passenger Oxygen System – Operational Test", "already_shown": false, "depth": 3, "children": []}, {"dmc": "B787-A-38-32-00-08A-320A-A", "title": "Vacuum Waste System – Operational Test", "already_shown": false, "depth": 3, "children": []}, {"dmc": "B787-A-38-32-00-09A-320A-A", "title": "Vacuum Toilet – Operational Test", "already_shown": false, "depth": 3, "children": []}, {"dmc": "B787-A-44-11-00-27A-300B-A", "title": "Cabin Services System Commanded Output – System Test", "already_shown": false, "depth": 3, "children": []}]}, {"dmc": "B787-A-26-13-00-00A-300B-A", "title": "Lavatory Smoke Detection – System Test", "already_shown": false, "depth": 2, "children": []}, {"dmc": "B787-A-26-13-00-00B-320A-A", "title": "Lavatory Smoke Detection – Operational Test", "already_shown": false, "depth": 2, "children": []}, {"dmc": "B787-A-38-10-00-24A-364A-A", "title": "Potable Water System – Leak Test", "already_shown": false, "depth": 2, "children": [{"dmc": "B787-A-12-14-01-00A-228A-A", "title": "Potable Water System – Drain Liquid", "already_shown": true, "depth": 3, "children": []}, {"dmc": "B787-A-20-10-20-00A-720A-A", "title": "Coupling – Installation", "already_shown": true, "depth": 3, "children": []}, {"dmc": "B787-A-25-21-06-00A-520A-A", "title": "Main Ceiling Panel – Removal", "already_shown": true, "depth": 3, "children": []}, {"dmc": "B787-A-38-10-00-24B-263A-A", "title": "Potable Water System – Disinfecting, Sanitizing", "already_shown": true, "depth": 3, "children": []}, {"dmc": "B787-A-38-10-01-00A-720A-A", "title": "Potable Water System Cap – Installation", "already_shown": true, "depth": 3, "children": []}, {"dmc": "B787-A-50-11-06-02A-520A-A", "title": "Cargo Compartment Ceiling Lining – Removal", "already_shown": false, "depth": 3, "children": []}]}, {"dmc": "B787-A-38-10-00-24B-263A-A", "title": "Potable Water System – Disinfecting, Sanitizing", "already_shown": true, "depth": 2, "children": []}, {"dmc": "B787-A-53-01-01-01A-720A-A", "title": "Passenger Compartment Floor Panel Tape – Installation", "already_shown": false, "depth": 2, "children": [{"dmc": "B787-A-25-27-01-00B-720A-A", "title": "Carpet (Adhesive Back) – Installation", "already_shown": true, "depth": 3, "children": []}, {"dmc": "B787-A-25-27-02-00A-720A-A", "title": "Floor Mat – Installation", "already_shown": false, "depth": 3, "children": []}]}]}]}];
+
+function makeNode(item) {
+  const div = document.createElement('div');
+  const depth = Math.min(item.depth, 9);
+  let cls = `node d${depth}`;
+  if (item.title === 'NOT FOUND IN ZIP') cls += ' nf';
+  if (item.already_shown) cls += ' as';
+  div.className = cls;
+
+  const dmc = document.createElement('div');
+  dmc.className = 'dmc';
+  dmc.textContent = item.dmc;
+  div.appendChild(dmc);
+
+  const lbl = document.createElement('div');
+  lbl.className = 'lbl';
+  lbl.textContent = item.already_shown
+    ? '\u21a9 ' + item.title
+    : item.title === 'NOT FOUND IN ZIP' ? 'NOT FOUND' : item.title;
+  div.appendChild(lbl);
+  return div;
+}
+
+function buildTree(item) {
+  const row = document.createElement('div');
+  row.className = 'child-row';
+  row.appendChild(makeNode(item));
+
+  if (item.children && item.children.length > 0) {
+    const hline = document.createElement('div');
+    hline.className = 'h-line';
+    row.appendChild(hline);
+
+    const bracket = document.createElement('div');
+    bracket.className = 'bracket';
+
+    item.children.forEach(child => {
+      const childRow = document.createElement('div');
+      childRow.className = 'child-row';
+      const stub = document.createElement('div');
+      stub.className = 'stub';
+      childRow.appendChild(stub);
+      childRow.appendChild(buildTree(child));
+      bracket.appendChild(childRow);
+    });
+
+    row.appendChild(bracket);
+
+    requestAnimationFrame(() => {
+      const kids = Array.from(bracket.children);
+      if (kids.length < 2) return;
+      const bRect  = bracket.getBoundingClientRect();
+      const top    = kids[0].getBoundingClientRect().top    + kids[0].getBoundingClientRect().height / 2 - bRect.top;
+      const bottom = kids[kids.length-1].getBoundingClientRect().top + kids[kids.length-1].getBoundingClientRect().height / 2 - bRect.top;
+      const bar = document.createElement('div');
+      bar.style.cssText = `position:absolute;left:0;top:${top}px;width:2px;height:${bottom-top}px;background:#555;pointer-events:none;`;
+      bracket.appendChild(bar);
+    });
+  }
+  return row;
+}
+
+const app = document.getElementById('app');
+
+TREES.forEach(root => {
+  const section = document.createElement('div');
+  section.className = 'tree-section';
+
+  const title = document.createElement('div');
+  title.className = 'section-title';
+  title.textContent = root.dmc + '  —  ' + root.title;
+  section.appendChild(title);
+
+  const viewport = document.createElement('div');
+  viewport.className = 'tree-viewport';
+
+  const sizer = document.createElement('div');
+  sizer.className = 'tree-sizer';
+
+  const canvas = document.createElement('div');
+  canvas.className = 'tree-canvas';
+  canvas.appendChild(buildTree(root));
+  sizer.appendChild(canvas);
+  viewport.appendChild(sizer);
+  section.appendChild(viewport);
+  app.appendChild(section);
+});
+
+// ── Zoom ────────────────────────────────────────────────────────────────────
+const slider = document.getElementById('zoomSlider');
+const label  = document.getElementById('zoomLabel');
+
+function applyZoom(z) {
+  label.textContent = z + '%';
+  const scale = z / 100;
+  // Apply scale to the sizer wrapper, then resize it so the viewport
+  // scrollable area matches the scaled content exactly — no clipping.
+  document.querySelectorAll('.tree-sizer').forEach(sizer => {
+    const canvas = sizer.querySelector('.tree-canvas');
+    // Reset scale to measure natural size
+    sizer.style.transform = '';
+    sizer.style.width  = '';
+    sizer.style.height = '';
+    const w = canvas.scrollWidth;
+    const h = canvas.scrollHeight;
+    // Apply scale via transform, then shrink the sizer to scaled dims
+    sizer.style.transform = `scale(${scale})`;
+    sizer.style.transformOrigin = 'top left';
+    sizer.style.width  = (w * scale) + 'px';
+    sizer.style.height = (h * scale) + 'px';
+  });
+}
+
+slider.addEventListener('input', () => applyZoom(parseInt(slider.value)));
+requestAnimationFrame(() => requestAnimationFrame(() => applyZoom(parseInt(slider.value))));
+
+// ── Pan to scroll ────────────────────────────────────────────────────────────
+document.querySelectorAll('.tree-viewport').forEach(vp => {
+  let isDown = false, startX, startY, scrollLeft, scrollTop;
+  vp.addEventListener('mousedown', e => {
+    isDown = true;
+    startX = e.pageX - vp.offsetLeft;
+    startY = e.pageY - vp.offsetTop;
+    scrollLeft = vp.scrollLeft;
+    scrollTop  = vp.scrollTop;
+  });
+  vp.addEventListener('mouseleave', () => isDown = false);
+  vp.addEventListener('mouseup',    () => isDown = false);
+  vp.addEventListener('mousemove',  e => {
+    if (!isDown) return;
+    e.preventDefault();
+    vp.scrollLeft = scrollLeft - (e.pageX - vp.offsetLeft - startX);
+    vp.scrollTop  = scrollTop  - (e.pageY - vp.offsetTop  - startY);
+  });
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>AMM Reference Tree</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Courier New', Courier, monospace;
+    background: #d8dde3;
+    min-height: 100vh;
+    padding: 20px;
+    color: #1a1a2e;
+  }
+
+  header {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 2px solid #aaa;
+  }
+
+  header h1 {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: #444;
+    flex: 1;
+  }
+
+  .zoom-ctrl {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 10px;
+    color: #555;
+    letter-spacing: 0.05em;
+  }
+
+  .zoom-ctrl input[type=range] {
+    width: 100px;
+    accent-color: #1a5fa8;
+  }
+
+  .zoom-label {
+    min-width: 34px;
+    font-size: 10px;
+    color: #333;
+    font-weight: 700;
+  }
+
+  .tree-section {
+    margin-bottom: 28px;
+    background: #e8ecf0;
+    border: 1px solid #c0c6cd;
+    border-radius: 3px;
+    padding: 14px 14px 18px;
+  }
+
+  .section-title {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #1a5fa8;
+    margin-bottom: 14px;
+  }
+
+  .tree-viewport {
+    overflow: auto;
+    width: 100%;
+    cursor: grab;
+    /* height is set by JS after measuring the canvas */
+  }
+  .tree-viewport:active { cursor: grabbing; }
+
+  /* Outer sizer shrinks with the scale so the viewport has correct scrollable area */
+  .tree-sizer {
+    display: inline-block;
+    transform-origin: top left;
+  }
+
+  .tree-canvas {
+    display: inline-flex;
+    padding: 16px 40px 24px 16px;
+  }
+
+  .node {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    width: 168px;
+    min-height: 40px;
+    padding: 5px 8px;
+    border: 2px solid #1a5fa8;
+    background: #fff;
+    text-align: center;
+    flex-shrink: 0;
+    margin: 6px 0;
+  }
+
+  .node .dmc {
+    font-size: 7.5px;
+    letter-spacing: 0.04em;
+    color: #999;
+    margin-bottom: 2px;
+    word-break: break-all;
+    line-height: 1.2;
+  }
+
+  .node .lbl {
+    font-size: 9px;
+    font-weight: 700;
+    line-height: 1.3;
+    color: #1a1a2e;
+  }
+
+  .d0 { border-color: #1a5fa8; }
+  .d1 { border-color: #e07b2a; }
+  .d2 { border-color: #27a86e; }
+  .d3 { border-color: #9b3db8; }
+  .d4 { border-color: #b5860d; }
+  .d5 { border-color: #1a5fa8; }
+  .d6 { border-color: #e07b2a; }
+  .d7 { border-color: #27a86e; }
+  .d8 { border-color: #9b3db8; }
+  .d9 { border-color: #b5860d; }
+
+  .node.nf { border-color: #c0392b; background: #fff5f5; }
+  .node.nf .lbl { color: #c0392b; font-size: 8px; }
+  .node.as { border-style: dashed; opacity: 0.6; }
+  .node.as .lbl { font-style: italic; }
+
+  .h-line { width: 22px; height: 2px; background: #555; flex-shrink: 0; }
+  .stub   { width: 22px; height: 2px; background: #555; flex-shrink: 0; }
+
+  .bracket {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    position: relative;
+    flex-shrink: 0;
+  }
+
+  .child-row {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>AMM Reference Tree &nbsp;<span style="font-weight:400;color:#888;">(max depth: 3)</span></h1>
+  <div class="zoom-ctrl">
+    ZOOM
+    <input type="range" id="zoomSlider" min="20" max="150" value="65">
+    <span class="zoom-label" id="zoomLabel">65%</span>
+  </div>
+</header>
+
+<div id="app"></div>
+
+<script>
+const TREES = [{"dmc": "B787-A-20-60-03-00B-280B-A", "title": "Wiring (EZAP) – Detailed Inspection", "already_shown": false, "depth": 0, "children": [{"dmc": "B787-A-20-41-00-00A-950A-A", "title": "Airplane Static Grounding – Standard Practices", "already_shown": false, "depth": 1, "children": [{"dmc": "B787-A-20-41-00-02A-366A-A", "title": "Airplane Electrical Resistance to Ground – Resistance Test", "already_shown": false, "depth": 2, "children": [{"dmc": "B787-A-24-22-00-00Q-510B-A", "title": "Electrical Power (Task Selection) – Deactivation", "already_shown": false, "depth": 3, "children": []}, {"dmc": "B787-A-24-22-00-00Q-730B-A", "title": "Electrical Power (Task Selection) – Activation", "already_shown": false, "depth": 3, "children": []}]}]}, {"dmc": "B787-A-20-60-02-00B-258A-A", "title": "Combustible Material Around Wiring (EZAP) – Cleaning", "already_shown": false, "depth": 1, "children": [{"dmc": "B787-A-20-41-00-00A-950A-A", "title": "Airplane Static Grounding – Standard Practices", "already_shown": true, "depth": 2, "children": []}, {"dmc": "B787-A-20-60-07-00A-720A-A", "title": "Electrical Wiring Interconnection System Protection (EZAP) – Installation", "already_shown": false, "depth": 2, "children": [{"dmc": "B787-A-20-60-02-00B-258A-A", "title": "Combustible Material Around Wiring (EZAP) – Cleaning", "already_shown": true, "depth": 3, "children": []}]}]}, {"dmc": "B787-A-20-60-07-00A-720A-A", "title": "Electrical Wiring Interconnection System Protection (EZAP) – Installation", "already_shown": true, "depth": 1, "children": []}, {"dmc": "B787-A-28-11-00-01A-540A-A", "title": "Fuel Tank Purging and Entry – Open for Access", "already_shown": false, "depth": 1, "children": [{"dmc": "B787-A-12-11-02-00A-221A-A", "title": "Fuel Tank Entry Preparation – Defueling", "already_shown": false, "depth": 2, "children": [{"dmc": "B787-A-08-21-00-00A-912A-A", "title": "Make the Airplane Level – Handling", "already_shown": false, "depth": 3, "children": []}, {"dmc": "B787-A-28-11-06-01A-520A-A", "title": "Fuel Sump Drain Valve – Removal", "already_shown": false, "depth": 3, "children": []}, {"dmc": "B787-A-28-11-06-01A-720A-A", "title": "Fuel Sump Drain Valve – Installation", "already_shown": false, "depth": 3, "children": []}]}, {"dmc": "B787-A-20-41-00-02A-366A-A", "title": "Airplane Electrical Resistance to Ground – Resistance Test", "already_shown": true, "depth": 2, "children": []}, {"dmc": "B787-A-24-22-00-00Q-510B-A", "title": "Electrical Power (Task Selection) – Deactivation", "already_shown": true, "depth": 2, "children": []}, {"dmc": "B787-A-24-31-01-02A-510A-A", "title": "Main Battery – Disconnect", "already_shown": false, "depth": 2, "children": [{"dmc": "B787-A-09-11-00-00A-912A-A", "title": "Airplane Towing – Handling", "already_shown": false, "depth": 3, "children": []}, {"dmc": "B787-A-20-41-01-05A-912A-A", "title": "Electrostatic Discharge Sensitive Device – Handling", "already_shown": false, "depth": 3, "children": []}, {"dmc": "B787-A-24-22-00-00Q-510B-A", "title": "Electrical Power (Task Selection) – Deactivation", "already_shown": true, "depth": 3, "children": []}, {"dmc": "B787-A-24-31-03-00A-520A-A", "title": "Battery Diode Module – Removal", "already_shown": false, "depth": 3, "children": []}, {"dmc": "B787-A-33-51-00-04A-510B-A", "title": "Emergency Lighting System Power – Deactivation", "already_shown": false, "depth": 3, "children": []}, {"dmc": "B787-A-33-51-00-10A-110B-A", "title": "Emergency Lighting System Initiate Sleep Mode – Software Operation", "already_shown": false, "depth": 3, "children": []}]}, {"dmc": "B787-A-24-31-05-02A-510A-A", "title": "APU Battery – Disconnect", "already_shown": false, "depth": 2, "children": [{"dmc": "B787-A-20-41-01-05A-912A-A", "title": "Electrostatic Discharge Sensitive Device – Handling", "already_shown": true, "depth": 3, "children": []}]}, {"dmc": "B787-A-27-51-00-28A-510B-A", "title": "Trailing Edge Flap System – Deactivation", "already_shown": false, "depth": 2, "children": [{"dmc": "B787-A-29-11-00-24A-510B-A", "title": "Hydraulic System Power - Left – Deactivation", "already_shown": false, "depth": 3, "children": []}, {"dmc": "B787-A-29-11-00-26A-510B-A", "title": "Hydraulic System Power - Right – Deactivation", "already_shown": false, "depth": 3, "children": []}, {"dmc": "B787-A-29-11-00-32A-510B-A", "title": "Hydraulic System Power - Center – Deactivation", "already_shown": false, "depth": 3, "children": []}, {"dmc": "B787-A-32-00-15-00A-510B-A", "title": "Landing Gear Door – Deactivation", "already_shown": false, "depth": 3, "children": []}]}, {"dmc": "B787-A-27-81-00-24A-510B-A", "title": "Leading Edge Slat System – Deactivation", "already_shown": false, "depth": 2, "children": [{"dmc": "B787-A-29-11-00-24A-510B-A", "title": "Hydraulic System Power - Left – Deactivation", "already_shown": true, "depth": 3, "children": []}, {"dmc": "B787-A-29-11-00-26A-510B-A", "title": "Hydraulic System Power - Right – Deactivation", "already_shown": true, "depth": 3, "children": []}, {"dmc": "B787-A-29-11-00-32A-510B-A", "title": "Hydraulic System Power - Center – Deactivation", "already_shown": true, "depth": 3, "children": []}, {"dmc": "B787-A-32-00-15-00A-510B-A", "title": "Landing Gear Door – Deactivation", "already_shown": true, "depth": 3, "children": []}, {"dmc": "B787-A-50-11-23-00A-520A-A", "title": "Forward Cargo Compartment Aft Endwall – Removal", "already_shown": false, "depth": 3, "children": []}, {"dmc": "B787-A-52-34-00-00A-540A-A", "title": "Forward Cargo Door Using the External Cargo Door Control Switch – Open for Access", "already_shown": false, "depth": 3, "children": []}]}, {"dmc": "B787-A-28-11-00-01A-012B-A", "title": "Fuel Tank Purging and Entry – Safety Precautions", "already_shown": false, "depth": 2, "children": [{"dmc": "B787-A-12-11-01-02A-211A-A", "title": "Pressure Refueling – Fueling", "already_shown": false, "depth": 3, "children": []}, {"dmc": "B787-A-28-11-00-01A-540A-A", "title": "Fuel Tank Purging and Entry – Open for Access", "already_shown": true, "depth": 3, "children": []}]}, {"dmc": "B787-A-28-11-00-01A-740A-A", "title": "Fuel Tank Purging and Entry – Close after Access", "already_shown": false, "depth": 2, "children": [{"dmc": "B787-A-24-22-00-00Q-730B-A", "title": "Electrical Power (Task Selection) – Activation", "already_shown": true, "depth": 3, "children": []}, {"dmc": "B787-A-24-31-01-02A-730A-A", "title": "Main Battery – Reconnect", "already_shown": false, "depth": 3, "children": []}, {"dmc": "B787-A-24-31-05-02A-730A-A", "title": "APU Battery – Reconnect", "already_shown": false, "depth": 3, "children": []}, {"dmc": "B787-A-27-51-00-28A-730B-A", "title": "Trailing Edge Flap System – Activation", "already_shown": false, "depth": 3, "children": []}, {"dmc": "B787-A-27-81-00-24A-730B-A", "title": "Leading Edge Slat System – Activation", "already_shown": false, "depth": 3, "children": []}, {"dmc": "B787-A-28-00-00-43A-950A-A", "title": "Airworthiness Limitation Precautions – Standard Practices", "already_shown": false, "depth": 3, "children": []}, {"dmc": "B787-A-28-11-00-01A-012B-A", "title": "Fuel Tank Purging and Entry – Safety Precautions", "already_shown": true, "depth": 3, "children": []}, {"dmc": "B787-A-28-11-01-00A-720A-A", "title": "Main Tank Access Panel – Installation", "already_shown": false, "depth": 3, "children": []}, {"dmc": "B787-A-28-11-02-00A-720A-A", "title": "Center Tank Access Panel – Installation", "already_shown": false, "depth": 3, "children": []}, {"dmc": "B787-A-28-11-02-01A-720A-A", "title": "Center Tank Rear Spar Access Panel – Installation", "already_shown": false, "depth": 3, "children": []}, {"dmc": "B787-A-28-11-03-00A-720A-A", "title": "Surge Tank Access Panel – Installation", "already_shown": false, "depth": 3, "children": []}, {"dmc": "B787-A-28-11-04-00A-720A-A", "title": "Center Tank Purge Hole Cover – Installation", "already_shown": false, "depth": 3, "children": []}, {"dmc": "B787-A-28-11-10-00A-720A-A", "title": "Spanwise Beam Access Panel – Installation", "already_shown": false, "depth": 3, "children": []}, {"dmc": "B787-A-32-00-15-00A-730B-A", "title": "Landing Gear Door – Activation", "already_shown": false, "depth": 3, "children": []}, {"dmc": "B787-A-47-11-00-01A-110A-A", "title": "Nitrogen Generation System Ground Modes – Operation", "already_shown": false, "depth": 3, "children": []}, {"dmc": "B787-A-G73-11-06-00A-280B-A", "title": "Main Fuel Pump Lube Flow Screen – Detailed Inspection", "already_shown": false, "depth": 3, "children": []}]}, {"dmc": "B787-A-28-11-01-00A-520A-A", "title": "Main Tank Access Panel – Removal", "already_shown": false, "depth": 2, "children": [{"dmc": "B787-A-28-11-00-01A-012B-A", "title": "Fuel Tank Purging and Entry – Safety Precautions", "already_shown": true, "depth": 3, "children": []}, {"dmc": "B787-A-28-26-00-01B-221A-A", "title": "Airplane (Pressure Method) – Defueling", "already_shown": false, "depth": 3, "children": []}, {"dmc": "B787-A-28-26-00-09A-110A-A", "title": "Tank-to-Tank Fuel Transfer – Operation", "already_shown": false, "depth": 3, "children": []}]}, {"dmc": "B787-A-28-11-02-00A-520A-A", "title": "Center Tank Access Panel – Removal", "already_shown": false, "depth": 2, "children": [{"dmc": "B787-A-28-11-00-01A-012B-A", "title": "Fuel Tank Purging and Entry – Safety Precautions", "already_shown": true, "depth": 3, "children": []}, {"dmc": "B787-A-28-26-00-01B-221A-A", "title": "Airplane (Pressure Method) – Defueling", "already_shown": true, "depth": 3, "children": []}, {"dmc": "B787-A-28-26-00-09A-110A-A", "title": "Tank-to-Tank Fuel Transfer – Operation", "already_shown": true, "depth": 3, "children": []}]}, {"dmc": "B787-A-28-11-02-01A-520A-A", "title": "Center Tank Rear Spar Access Panel – Removal", "already_shown": false, "depth": 2, "children": [{"dmc": "B787-A-28-11-00-01A-540A-A", "title": "Fuel Tank Purging and Entry – Open for Access", "already_shown": true, "depth": 3, "children": []}, {"dmc": "B787-A-28-26-00-01B-221A-A", "title": "Airplane (Pressure Method) – Defueling", "already_shown": true, "depth": 3, "children": []}, {"dmc": "B787-A-28-26-00-09A-110A-A", "title": "Tank-to-Tank Fuel Transfer – Operation", "already_shown": true, "depth": 3, "children": []}, {"dmc": "B787-A-32-00-15-00A-510B-A", "title": "Landing Gear Door – Deactivation", "already_shown": true, "depth": 3, "children": []}, {"dmc": "B787-A-32-00-30-00A-720A-A", "title": "Landing Gear Downlock Pins – Installation", "already_shown": false, "depth": 3, "children": []}]}, {"dmc": "B787-A-28-11-03-00A-520A-A", "title": "Surge Tank Access Panel – Removal", "already_shown": false, "depth": 2, "children": [{"dmc": "B787-A-12-11-02-02A-221A-A", "title": "Surge Tank Fuel Check – Defueling", "already_shown": false, "depth": 3, "children": []}, {"dmc": "B787-A-28-11-00-01A-012B-A", "title": "Fuel Tank Purging and Entry – Safety Precautions", "already_shown": true, "depth": 3, "children": []}, {"dmc": "B787-A-28-13-03-00A-520A-A", "title": "Surge Tank Pressure Relief Valve – Removal", "already_shown": false, "depth": 3, "children": []}]}, {"dmc": "B787-A-28-11-04-00A-520A-A", "title": "Center Tank Purge Hole Cover – Removal", "already_shown": false, "depth": 2, "children": [{"dmc": "B787-A-24-22-00-00Q-510B-A", "title": "Electrical Power (Task Selection) – Deactivation", "already_shown": true, "depth": 3, "children": []}, {"dmc": "B787-A-28-11-00-01A-012B-A", "title": "Fuel Tank Purging and Entry – Safety Precautions", "already_shown": true, "depth": 3, "children": []}, {"dmc": "B787-A-28-11-02-01A-520A-A", "title": "Center Tank Rear Spar Access Panel – Removal", "already_shown": true, "depth": 3, "children": []}, {"dmc": "B787-A-28-11-10-00A-520A-A", "title": "Spanwise Beam Access Panel – Removal", "already_shown": false, "depth": 3, "children": []}, {"dmc": "B787-A-28-26-00-01B-221A-A", "title": "Airplane (Pressure Method) – Defueling", "already_shown": true, "depth": 3, "children": []}, {"dmc": "B787-A-28-26-00-09A-110A-A", "title": "Tank-to-Tank Fuel Transfer – Operation", "already_shown": true, "depth": 3, "children": []}, {"dmc": "B787-A-32-00-30-00A-720A-A", "title": "Landing Gear Downlock Pins – Installation", "already_shown": true, "depth": 3, "children": []}]}, {"dmc": "B787-A-28-11-10-00A-520A-A", "title": "Spanwise Beam Access Panel – Removal", "already_shown": true, "depth": 2, "children": []}, {"dmc": "B787-A-28-26-00-01B-221A-A", "title": "Airplane (Pressure Method) – Defueling", "already_shown": true, "depth": 2, "children": []}, {"dmc": "B787-A-28-26-00-09A-110A-A", "title": "Tank-to-Tank Fuel Transfer – Operation", "already_shown": true, "depth": 2, "children": []}, {"dmc": "B787-A-32-00-15-00A-510B-A", "title": "Landing Gear Door – Deactivation", "already_shown": true, "depth": 2, "children": []}, {"dmc": "B787-A-32-00-30-00A-720A-A", "title": "Landing Gear Downlock Pins – Installation", "already_shown": true, "depth": 2, "children": []}, {"dmc": "B787-A-45-11-00-46A-110B-A", "title": "Find a Maintenance Message Correlated to an Active or Latched Flight Deck Effect – Software Operation", "already_shown": false, "depth": 2, "children": [{"dmc": "B787-A-45-11-00-43A-110B-A", "title": "Start the Central Maintenance Computing Function – Software Operation", "already_shown": false, "depth": 3, "children": []}]}, {"dmc": "B787-A-47-11-00-01A-110A-A", "title": "Nitrogen Generation System Ground Modes – Operation", "already_shown": true, "depth": 2, "children": []}]}, {"dmc": "B787-A-28-11-00-01A-740A-A", "title": "Fuel Tank Purging and Entry – Close after Access", "already_shown": true, "depth": 1, "children": []}]}];
+
+function makeNode(item) {
+  const div = document.createElement('div');
+  const depth = Math.min(item.depth, 9);
+  let cls = `node d${depth}`;
+  if (item.title === 'NOT FOUND IN ZIP') cls += ' nf';
+  if (item.already_shown) cls += ' as';
+  div.className = cls;
+
+  const dmc = document.createElement('div');
+  dmc.className = 'dmc';
+  dmc.textContent = item.dmc;
+  div.appendChild(dmc);
+
+  const lbl = document.createElement('div');
+  lbl.className = 'lbl';
+  lbl.textContent = item.already_shown
+    ? '\u21a9 ' + item.title
+    : item.title === 'NOT FOUND IN ZIP' ? 'NOT FOUND' : item.title;
+  div.appendChild(lbl);
+  return div;
+}
+
+function buildTree(item) {
+  const row = document.createElement('div');
+  row.className = 'child-row';
+  row.appendChild(makeNode(item));
+
+  if (item.children && item.children.length > 0) {
+    const hline = document.createElement('div');
+    hline.className = 'h-line';
+    row.appendChild(hline);
+
+    const bracket = document.createElement('div');
+    bracket.className = 'bracket';
+
+    item.children.forEach(child => {
+      const childRow = document.createElement('div');
+      childRow.className = 'child-row';
+      const stub = document.createElement('div');
+      stub.className = 'stub';
+      childRow.appendChild(stub);
+      childRow.appendChild(buildTree(child));
+      bracket.appendChild(childRow);
+    });
+
+    row.appendChild(bracket);
+
+    requestAnimationFrame(() => {
+      const kids = Array.from(bracket.children);
+      if (kids.length < 2) return;
+      const bRect  = bracket.getBoundingClientRect();
+      const top    = kids[0].getBoundingClientRect().top    + kids[0].getBoundingClientRect().height / 2 - bRect.top;
+      const bottom = kids[kids.length-1].getBoundingClientRect().top + kids[kids.length-1].getBoundingClientRect().height / 2 - bRect.top;
+      const bar = document.createElement('div');
+      bar.style.cssText = `position:absolute;left:0;top:${top}px;width:2px;height:${bottom-top}px;background:#555;pointer-events:none;`;
+      bracket.appendChild(bar);
+    });
+  }
+  return row;
+}
+
+const app = document.getElementById('app');
+
+TREES.forEach(root => {
+  const section = document.createElement('div');
+  section.className = 'tree-section';
+
+  const title = document.createElement('div');
+  title.className = 'section-title';
+  title.textContent = root.dmc + '  —  ' + root.title;
+  section.appendChild(title);
+
+  const viewport = document.createElement('div');
+  viewport.className = 'tree-viewport';
+
+  const sizer = document.createElement('div');
+  sizer.className = 'tree-sizer';
+
+  const canvas = document.createElement('div');
+  canvas.className = 'tree-canvas';
+  canvas.appendChild(buildTree(root));
+  sizer.appendChild(canvas);
+  viewport.appendChild(sizer);
+  section.appendChild(viewport);
+  app.appendChild(section);
+});
+
+// ── Zoom ────────────────────────────────────────────────────────────────────
+const slider = document.getElementById('zoomSlider');
+const label  = document.getElementById('zoomLabel');
+
+function applyZoom(z) {
+  label.textContent = z + '%';
+  const scale = z / 100;
+  // Apply scale to the sizer wrapper, then resize it so the viewport
+  // scrollable area matches the scaled content exactly — no clipping.
+  document.querySelectorAll('.tree-sizer').forEach(sizer => {
+    const canvas = sizer.querySelector('.tree-canvas');
+    // Reset scale to measure natural size
+    sizer.style.transform = '';
+    sizer.style.width  = '';
+    sizer.style.height = '';
+    const w = canvas.scrollWidth;
+    const h = canvas.scrollHeight;
+    // Apply scale via transform, then shrink the sizer to scaled dims
+    sizer.style.transform = `scale(${scale})`;
+    sizer.style.transformOrigin = 'top left';
+    sizer.style.width  = (w * scale) + 'px';
+    sizer.style.height = (h * scale) + 'px';
+  });
+}
+
+slider.addEventListener('input', () => applyZoom(parseInt(slider.value)));
+requestAnimationFrame(() => requestAnimationFrame(() => applyZoom(parseInt(slider.value))));
+
+// ── Pan to scroll ────────────────────────────────────────────────────────────
+document.querySelectorAll('.tree-viewport').forEach(vp => {
+  let isDown = false, startX, startY, scrollLeft, scrollTop;
+  vp.addEventListener('mousedown', e => {
+    isDown = true;
+    startX = e.pageX - vp.offsetLeft;
+    startY = e.pageY - vp.offsetTop;
+    scrollLeft = vp.scrollLeft;
+    scrollTop  = vp.scrollTop;
+  });
+  vp.addEventListener('mouseleave', () => isDown = false);
+  vp.addEventListener('mouseup',    () => isDown = false);
+  vp.addEventListener('mousemove',  e => {
+    if (!isDown) return;
+    e.preventDefault();
+    vp.scrollLeft = scrollLeft - (e.pageX - vp.offsetLeft - startX);
+    vp.scrollTop  = scrollTop  - (e.pageY - vp.offsetTop  - startY);
+  });
+});
+</script>
+</body>
+</html>
